@@ -27,13 +27,26 @@ jobs:
     - name: Install dependencies
       run: pip install pandas requests
 
-    - name: Run script
+    # Script original (arrayIMKTodo11, genera aire_monterrey.csv)
+    - name: Run main script
       run: python main.py
+
+    # Nuevo script para índice API ancho + histórico
+    - name: Run indice API ancho script
+      run: python indice_api_ancho.py
 
     - name: Commit CSV update
       run: |
         git config --global user.name "github-actions"
         git config --global user.email "actions@github.com"
-        git add aire_monterrey.csv
-        git commit -m "Auto update"
-        git push
+
+        # Añadimos todos los CSV relevantes
+        git add aire_monterrey.csv aire_indice_api_ancho.csv aire_indice_api_ancho_historico.csv
+
+        # Si no hay cambios, no intentar hacer commit
+        if git diff --cached --quiet; then
+          echo "No hay cambios para commitear."
+        else
+          git commit -m "Auto update"
+          git push
+        fi
