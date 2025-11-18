@@ -4,7 +4,7 @@ on:
   schedule:
     - cron: "30 16 * * *"   # 10:30 AM México (UTC-6)
     - cron: "30 20 * * *"   # 2:30 PM México (UTC-6)
-    - cron: "30 1 * * *"    # 7:30 PM México (UTC-6) → 01:30 UTC
+    - cron: "30 1 * * *"    # 7:30 PM México (UTC-6) -> 01:30 UTC siguiente día
   workflow_dispatch:
 
 jobs:
@@ -27,26 +27,39 @@ jobs:
     - name: Install dependencies
       run: pip install pandas requests
 
-    # Script original (arrayIMKTodo11, genera aire_monterrey.csv)
-    - name: Run main script
+    # ----------------------------------------------------------
+    # 1) Ejecutar main.py (ETL IMKTodo11 → aire_monterrey.csv)
+    # ----------------------------------------------------------
+    - name: Run main ETL script
       run: python main.py
 
-    # Nuevo script para índice API ancho + histórico
+    # ----------------------------------------------------------
+    # 2) Ejecutar indice_api_ancho.py
+    #    (API índice por estación → ancho + histórico)
+    # ----------------------------------------------------------
     - name: Run indice API ancho script
       run: python indice_api_ancho.py
 
+    # ----------------------------------------------------------
+    # 3) Ejecutar alertas.py (usa aire_monterrey.csv recién creado)
+    # ----------------------------------------------------------
+    - name: Run alert script
+      if: success()
+      env:
+        SMTP_USER: ${{ secrets.SMTP_USER }}
+        SMTP_PASS: ${{ secrets.SMTP_PASS }}
+        ALERT_TO_EMAIL: ${{ secrets.ALERT_TO_EMAIL }}
+      run: python alertas.py
+
+    # ----------------------------------------------------------
+    # 4) Commit y push de los CSV actualizados
+    # ----------------------------------------------------------
     - name: Commit CSV update
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         git config --global user.name "github-actions"
         git config --global user.email "actions@github.com"
-
-        # Añadimos todos los CSV relevantes
-        git add aire_monterrey.csv aire_indice_api_ancho.csv aire_indice_api_ancho_historico.csv
-
-        # Si no hay cambios, no intentar hacer commit
-        if git diff --cached --quiet; then
-          echo "No hay cambios para commitear."
-        else
-          git commit -m "Auto update"
-          git push
-        fi
+        git add *.csv
+        git commit -m "Auto update" || echo "No changes to commit"
+        git push
