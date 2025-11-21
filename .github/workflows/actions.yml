@@ -2,9 +2,9 @@ name: AireMonterrey
 
 on:
   schedule:
-    - cron: "30 12 * * *"   # 6:30 AM México (UTC-6)
-    - cron: "30 19 * * *"   # 1:30 PM México (UTC-6)
-    - cron: "30 0 * * *"    # 6:30 PM México (UTC-6)
+    - cron: "20 12-23 * * *"   # Cada hora de 6:20 AM a 6:20 PM (México)
+    - cron: "20 1 * * *"       # 7:20 PM (México)
+    - cron: "20 2 * * *"       # 8:20 PM (México)
   workflow_dispatch:
 
 jobs:
