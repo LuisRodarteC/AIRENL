@@ -3,6 +3,7 @@ import pandas as pd
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from email.mime.image import MIMEImage  # <-- NUEVO
 
 # --------------------------------------------------------
 # 1) Cargar el CSV generado por el primer código (main.py)
@@ -40,9 +41,6 @@ print(f"⚠ Se encontraron {len(df_alertas)} estaciones con alerta.")
 # --------------------------------------------------------
 
 def calidad_badge(calidad: str) -> str:
-    """
-    Devuelve un span HTML con color y emoji tipo semáforo según la calidad.
-    """
     mapping = {
         "Buena":               ("🟢", "#2e7d32"),
         "Aceptable":           ("🟡", "#fbc02d"),
@@ -67,15 +65,14 @@ def calidad_badge(calidad: str) -> str:
     return f'<span style="{style}">{emoji} {calidad}</span>'
 
 # --------------------------------------------------------
-# 4) Construir tabla HTML bonita con semáforos
+# 4) Construir tabla HTML con semáforos
 # --------------------------------------------------------
 
-# Nos quedamos con columnas clave (y solo las que existan)
 cols_deseadas = [
     "Estacion",
     "Municipio",
     "contaminante",
-    "concentracion",
+    "HrAveData",
     "Calidad",
     "Riesgo",
     "Date",
@@ -85,26 +82,23 @@ cols_deseadas = [
 cols_presentes = [c for c in cols_deseadas if c in df_alertas.columns]
 df_alertas = df_alertas[cols_presentes]
 
-# Construimos manualmente la tabla para poder meter el badge HTML
 cabeceras = {
     "Estacion": "Estación",
     "Municipio": "Municipio",
     "contaminante": "Contaminante",
-    "concentracion": "Valor índice (Concentración)",
+    "HrAveData": "Valor índice (HrAveData)",
     "Calidad": "Calidad (semáforo)",
     "Riesgo": "Riesgo",
     "Date": "Fecha / hora",
     "url_reporte": "Reporte detalle",
 }
 
-# Encabezado de la tabla
 thead_cells = "".join(
     f"<th style='border:1px solid #ddd;padding:6px 10px;background:#f5f5f5;'>{cabeceras.get(col, col)}</th>"
     for col in cols_presentes
 )
 thead_html = f"<thead><tr>{thead_cells}</tr></thead>"
 
-# Filas
 rows_html = ""
 for _, row in df_alertas.iterrows():
     celdas = []
@@ -112,10 +106,8 @@ for _, row in df_alertas.iterrows():
         val = row[col]
 
         if col == "Calidad":
-            # Cambiar texto por badge de color
             cell_html = calidad_badge(str(val))
         elif col == "url_reporte" and isinstance(val, str):
-            # Hacer la URL clickeable
             cell_html = f"<a href='{val}' target='_blank'>Ver reporte</a>"
         else:
             cell_html = str(val)
@@ -147,14 +139,22 @@ if not SMTP_USER or not SMTP_PASS or not ALERT_TO_EMAIL:
     print("❌ Faltan secretos: SMTP_USER, SMTP_PASS o ALERT_TO_EMAIL")
     raise SystemExit()
 
-msg = MIMEMultipart("alternative")
+msg = MIMEMultipart("related")  # related para poder incrustar imágenes
 msg["Subject"] = "⚠ Alertas de Calidad del Aire - Estaciones en Riesgo"
 msg["From"] = SMTP_USER
 msg["To"] = ALERT_TO_EMAIL
 
+# Parte alternativa (solo HTML en este caso)
+msg_alt = MIMEMultipart("alternative")
+msg.attach(msg_alt)
+
+# HTML: incluimos la imagen arriba usando cid:tabla_equivalencias
 html_body = f"""
 <html>
   <body style="font-family:Arial, sans-serif; font-size:14px; color:#333;">
+    <div style="text-align:center;margin-bottom:15px;">
+      <img src="cid:tabla_equivalencias" alt="Tabla de equivalencias Índice Aire y Salud" style="max-width:100%;height:auto;">
+    </div>
     <h2 style="color:#d32f2f;">⚠ Estaciones con calidad del aire crítica</h2>
     <p>
       Se detectaron estaciones cuyo nivel de calidad del aire es
@@ -170,10 +170,30 @@ html_body = f"""
 </html>
 """
 
-msg.attach(MIMEText(html_body, "html", "utf-8"))
+msg_alt.attach(MIMEText(html_body, "html", "utf-8"))
 
 # --------------------------------------------------------
-# 6) Enviar correo via SMTP (Gmail)
+# 6) Adjuntar la imagen como inline (cid:tabla_equivalencias)
+# --------------------------------------------------------
+
+IMAGE_PATH = "tabla_equivalencias_indice.png"  # <-- asegura que exista en el repo
+
+if os.path.exists(IMAGE_PATH):
+    try:
+        with open(IMAGE_PATH, "rb") as f:
+            img = MIMEImage(f.read())
+        img.add_header("Content-ID", "<tabla_equivalencias>")
+        img.add_header("Content-Disposition", "inline", filename=os.path.basename(IMAGE_PATH))
+        msg.attach(img)
+        print("🖼 Imagen de tabla de equivalencias adjuntada correctamente.")
+    except Exception as e:
+        print("⚠ No se pudo adjuntar la imagen de equivalencias:")
+        print(e)
+else:
+    print(f"⚠ No se encontró la imagen {IMAGE_PATH}. Se enviará el correo sin imagen.")
+
+# --------------------------------------------------------
+# 7) Enviar correo via SMTP (Gmail)
 # --------------------------------------------------------
 
 try:
