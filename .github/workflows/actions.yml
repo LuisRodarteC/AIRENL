@@ -2,10 +2,12 @@ name: AireMonterrey
 
 on:
   schedule:
-    - cron: "20 12-23 * * *"   # Cada hora de 6:20 AM a 6:20 PM (México)
-    - cron: "20 1 * * *"       # 7:20 PM (México)
-    - cron: "20 2 * * *"       # 8:20 PM (México)
+    - cron: "15 12-23 * * *"   # Cada hora de 6:15 AM a 5:15 PM (México)
+    - cron: "15 0 * * *"       # 6:15 PM (México)
+    - cron: "15 1 * * *"       # 7:15 PM (México)
+    - cron: "15 2 * * *"       # 8:15 PM (México)
   workflow_dispatch:
+
 
 jobs:
   build:
