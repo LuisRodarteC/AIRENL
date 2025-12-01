@@ -152,23 +152,36 @@ msg.attach(msg_alt)
 html_body = f"""
 <html>
   <body style="font-family:Arial, sans-serif; font-size:14px; color:#333;">
-    <div style="text-align:center;margin-bottom:15px;">
-      <img src="cid:tabla_equivalencias" alt="Tabla de equivalencias Índice Aire y Salud" style="max-width:100%;height:auto;">
-    </div>
+
     <h2 style="color:#d32f2f;">⚠ Estaciones con calidad del aire crítica</h2>
+
     <p>
       Se detectaron estaciones cuyo nivel de calidad del aire es
       <b>Mala</b>, <b>Muy mala</b> o <b>Extremadamente mala</b>.
     </p>
+
     {tabla_html}
-    <br>
+
+    <br><br>
+
     <p style="font-size:12px;color:#777;">
       Reporte generado automáticamente desde GitHub Actions.<br>
       Archivo base: <code>{CSV_FILE}</code>
     </p>
+
+    <hr style="margin:30px 0; border:0; border-top:1px solid #ccc;">
+
+    <!-- 🔽 Imagen movida al final del correo -->
+    <div style="text-align:center;margin-top:10px;">
+      <img src="cid:tabla_equivalencias" 
+           alt="Tabla de equivalencias Índice Aire y Salud"
+           style="max-width:100%;height:auto;">
+    </div>
+
   </body>
 </html>
 """
+
 
 msg_alt.attach(MIMEText(html_body, "html", "utf-8"))
 
