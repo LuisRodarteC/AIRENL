@@ -43,13 +43,13 @@ jobs:
     # ----------------------------------------------------------
     # 3) Ejecutar alertas.py (usa aire_monterrey.csv recién creado)
     # ----------------------------------------------------------
-    - name: Run alert script
-      if: success()
-      env:
-        SMTP_USER: ${{ secrets.SMTP_USER }}
-        SMTP_PASS: ${{ secrets.SMTP_PASS }}
-        ALERT_TO_EMAIL: ${{ secrets.ALERT_TO_EMAIL }}
-      run: python alertas.py
+   # - name: Run alert script
+   #   if: success()
+   #   env:
+   #     SMTP_USER: ${{ secrets.SMTP_USER }}
+   #     SMTP_PASS: ${{ secrets.SMTP_PASS }}
+   #     ALERT_TO_EMAIL: ${{ secrets.ALERT_TO_EMAIL }}
+   #   run: python alertas.py
 
     # ----------------------------------------------------------
     # 4) Commit y push de los CSV actualizados
